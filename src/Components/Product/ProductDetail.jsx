@@ -112,7 +112,7 @@ const ProductDetail = () => {
           <div className="relative z-10 w-96 mt-6 ">
             <p className="text-lg font-bold text-gray-900">{product.title}</p>
 
-            <b className="text-gray-900   font-semibold">
+            <b className="text-gray-900  font-semibold">
               Rs. {product.price}
             </b>
           </div>
