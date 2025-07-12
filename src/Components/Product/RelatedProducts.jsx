@@ -121,7 +121,7 @@ const RelatedProducts = ({ category, currentProductId }) => {
 
                     <div className=" mt-4 ">
                       <div className="flex justify-between items-center ">
-                        <p className="text-md font-semibold text-gray-900 dark:text-white">
+                        <p className="text-md font-semibold text-gray-900">
                           {product.title}
                         </p>
                       </div>
