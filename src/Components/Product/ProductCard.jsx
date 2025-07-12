@@ -145,7 +145,7 @@ const ProductCard = () => {
               </div>
               <div>
                 {hovered[product._id] && (
-                  <div className=" absolute md:left-45  sm:left-45  ">
+                  <div className=" absolute md:left-35  sm:left-45  ">
                     <button
                       className="relative bg-black text-white w-30 h-[42px] rounded-md cursor-pointer overflow-hidden group "
                       onClick={() =>
