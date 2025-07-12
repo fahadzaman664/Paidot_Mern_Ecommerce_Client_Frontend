@@ -2,18 +2,22 @@ import { useEffect, useState } from "react";
 import UserContext from "./UserContext";
 import axios from "axios";
 const UserState = (props) => {
-  const loginUrl = "http://localhost:1000";
+  //const loginUrl = "http://localhost:1000";
+    const loginUrl = "https://paidot-mern-ecommerce-api.onrender.com";
+
 
   const [token, setToken] = useState("");
   const [isAuthenticated, setIsAthenticated] = useState(false);
 
   const [userProfile, setUserProfile] = useState("");
+  const [user, setUser] = useState('');
 
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     if (savedToken) {
       setToken(savedToken);
       setIsAthenticated(true);
+  
     }
   }, []); // runs once on mount: loads token
 
@@ -29,6 +33,7 @@ const UserState = (props) => {
           withCredentials: true,
         });
         setUserProfile(api.data.userProfile);
+         setUser(api.data.userProfile);    
 
       } catch (error) {
         console.error(
@@ -99,6 +104,9 @@ const UserState = (props) => {
     }
   };
 
+  
+
+
   return (
     <UserContext.Provider
       value={{
@@ -109,7 +117,8 @@ const UserState = (props) => {
         loginUrl,
         setToken,
         setIsAthenticated,
-        userProfile
+        userProfile,
+        user
       }}
     >
       {props.children}

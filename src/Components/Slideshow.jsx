@@ -1,42 +1,91 @@
 import { useContext, useEffect, useState } from "react";
 import AppContext from "../Context/AppContext";
-const SlideShow= () => {
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Pagination, Navigation } from "swiper/modules";
+import { Link, useLocation } from "react-router-dom";
+import axios from "axios";
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
+import "swiper/css";
+import Spinner from "./Spinner";
+const SlideShow = () => {
   const { products } = useContext(AppContext);
-  const [currentP, setCurrentProduct] = useState(0);
+  const location = useLocation();
+  const [slideShowData, setSlideShowData] = useState("");
+  const [loading, setLoading] = useState(true);
+  //const url = "http://localhost:1000";
+    const url = "https://paidot-mern-ecommerce-api.onrender.com";
+
 
   useEffect(() => {
-    // for slideshow
-     const interval = setInterval(() => {
-      setCurrentProduct((prevIndex) => (prevIndex + 1) % products.length);
-    }, 3000);
+    const fetchdata = async () => {
+      try {
+        setLoading(true);
+        const api = await axios.get(`${url}/api/product/getallslideshow`, {
+          withCredentials: true,
+        });
+        setSlideShowData(api.data.slideshowdata);
+        setLoading(false);
+      } catch (error) {
+        console.error(
+          "Failed to fetch products:",
+          error.response?.data || error.message
+        );
+      }
+    };
 
-    return () => clearInterval(interval)
-  }, [products]);
-
-   if (!Array.isArray(products) || products.length === 0) {
-    return (
-      <div className="w-96 h-96 flex items-center justify-center text-gray-500">
-        Loading slideshow...
-      </div>
-    );
+    fetchdata();
+  }, []);
+  if (loading) {
+    return <Spinner />;
   }
 
-  // setting current index to get current index image
-  const currentProduct = products[currentP];
-
   return (
-    <div className="w-full h-96 flex items-center justify-center overflow-hidden relative">
-      <img
-        src={ currentProduct.imgSrc === "empty"
-            ? "/mobileimagedefualt.jpeg"
-            : currentProduct.imgSrc
-        }
-        alt="Slideshow"
-        className="object-cover w-full h-full transition-all duration-700 ease-in-out"
-      />
-      </div>
-  )
-       
+    <div>
+      {location.pathname === "/" && (
+        <div className="w-full h-96">
+          <Swiper
+            spaceBetween={30}
+            centeredSlides={true}
+            autoplay={{
+              delay: 6000,
+              disableOnInteraction: false,
+            }}
+            pagination={{
+              clickable: true,
+            }}
+            navigation={true}
+            modules={[Autoplay, Pagination, Navigation]}
+            className="w-full h-full"
+          >
+            {slideShowData.map((slide) => (
+              <SwiperSlide key={slide._id}>
+                <Link to={`/`}>
+                  {slide.videoSrc ? (
+                    <video
+                      src={slide.videoSrc}
+                      autoPlay
+                      muted
+                      loop
+                      controls={false}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={slide.imgSrc}
+                      alt={`slide-${slide._id}`}
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </Link>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default SlideShow;

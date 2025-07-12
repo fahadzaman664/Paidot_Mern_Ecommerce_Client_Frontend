@@ -1,17 +1,26 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import AppContext from "../../Context/AppContext";
-import { Link } from "react-router-dom";
+import { toast, Bounce } from "react-toastify";
+import Spinner from "../Spinner";
 import axios from "axios";
 import RelatedProducts from "./RelatedProducts";
+import ProductImageZoom from "./ProductImageZoom";
 const ProductDetail = () => {
   const { id } = useParams();
-  const { products } = useContext(AppContext);
+  const {
+    addToCart,
+    setLastAddedProduct,
 
-  const url = "http://localhost:1000";
+    setCartSheetOpen,
+  } = useContext(AppContext);
+
+ // const url = "http://localhost:1000";
+    const url = "https://paidot-mern-ecommerce-api.onrender.com";
+
   const [product, setProduct] = useState();
   const [isOpen, setIsOpen] = useState(false);
-  const [quantity, setquantity] = useState(0);
+  const [quantity, setquantity] = useState(1);
 
   const incrementquanity = () => {
     setquantity((prev) => {
@@ -20,14 +29,9 @@ const ProductDetail = () => {
   };
 
   const decrementquantity = () => {
-    setquantity((prev) => {
-      if (prev > 0) {
-        return prev - 1;
-      }
-
-      return 0;
-    });
+    setquantity((prev) => (prev > 1 ? prev - 1 : 1));
   };
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -39,27 +43,62 @@ const ProductDetail = () => {
         console.error("Failed to fetch product");
       }
     };
+    setquantity(1);
     fetchProduct();
   }, [id]);
+
   if (!product) {
-    return <div className="p-6 text-center">Loading product...</div>;
+    return (
+      <div className="p-6 flex justify-center">
+        <Spinner />{" "}
+      </div>
+    );
   }
+
+  const onClickAddToCart = async (title, price, qty, productId, imgSrc) => {
+    const response = await addToCart(title, price, qty, productId, imgSrc);
+    if (!response.success) {
+      toast.error(response.message);
+    }
+
+    if (response.success) {
+      const updatedCart = response.data;
+
+      // Find the recently added/updated product by ID:
+      const lastItem = updatedCart.items.find(
+        (item) => item.productId === productId
+      );
+
+      // Update Navbar's state via prop:
+      setLastAddedProduct(lastItem);
+      toast.success(response.message, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+      setCartSheetOpen(true);
+    }
+  };
+
   return (
-    <div className="block">
-      <div className="flex justify-end gap-x-4 mt-10  ">
-        <div className="w-96 h-96  ">
-          <img
-            className=" w-full h-full object-cover hover:scale-105 transition delay-150 duration-700 ease-in-out"
-            src={product.imgSrc}
-            alt={product.title}
-          ></img>
+    <div className="block ">
+      <div className="flex flex-row flex-wrap justify-center items-center sm:items-start sm:gap-x-8 gap-y-8 mt-10 px-4  ">
+        <div className="h-full ">
+          <ProductImageZoom src={product.imgSrc} />
         </div>
 
-        <div className=" block  items-center mr-70 w-1/3">
-          <div className="mt-10">
+        <div className=" w-96 pl-5 ">
+          <div className="relative z-10 w-96 mt-6 ">
             <p className="text-lg font-bold text-gray-900">{product.title}</p>
+
             <b className="text-red-600 dark:text-green-400 font-semibold">
-              Rs. {product.price.toLocaleString()}
+              Rs. {product.price}
             </b>
           </div>
 
@@ -73,7 +112,7 @@ const ProductDetail = () => {
               </button>
               <span>{quantity}</span>
               <button
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-black text-white text-lg font-bold"
+                className="w-8 h-8 flex items-center justify-center rounded -full bg-black text-white text-lg font-bold"
                 onClick={incrementquanity}
               >
                 +
@@ -81,7 +120,19 @@ const ProductDetail = () => {
             </div>
 
             <div>
-              <button className=" bg-black text-white w-30 h-[42px] rounded-full cursor-pointer overflow-hidden   ">
+              <button
+                className=" bg-black text-white w-30 h-[42px] rounded-full cursor-pointer overflow-hidden  
+              "
+                onClick={() =>
+                  onClickAddToCart(
+                    product.title,
+                    product.price,
+                    quantity,
+                    product._id,
+                    product.imgSrc
+                  )
+                }
+              >
                 Add to Cart
               </button>
             </div>
@@ -92,18 +143,20 @@ const ProductDetail = () => {
             <span className="font-bold mx-2">{isOpen ? "-" : "+"}</span>
           </div>
 
-          <div className="pr-10 ">
+          <div className=" max-w-90">
             {isOpen && (
-              <div className="inline mr-10 ">
+              <div className="inline  ">
                 {product.description || "No additional details available."}
               </div>
             )}
           </div>
         </div>
       </div>
-        
-        <RelatedProducts category={product.category} />
 
+      <RelatedProducts
+        category={product.category}
+        currentProductId={product._id}
+      />
     </div>
   );
 };

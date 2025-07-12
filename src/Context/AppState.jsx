@@ -8,10 +8,12 @@ const AppState = (props) => {
   const [filteredData, setFilteredData] = useState([]);
   const [products, setProduct] = useState([]);
   const [cart, setCart] = useState([]);
-  const [reload, setReload]= useState(false);
+  const [reload, setReload] = useState(false);
   const [latestCart, setLatestCart] = useState([]);
-  const [cartSheetOpen, setCartSheetOpen] = useState(false); // 👈 global drawer 
+  const [userAddress, setUserAddress] = useState("");
+  const [cartSheetOpen, setCartSheetOpen] = useState(false); // 👈 global drawer
   // state
+  const [userOrder, setUserOrder] = useState([]);
   const [lastAddedProduct, setLastAddedProduct] = useState(null);
 
 
@@ -26,6 +28,8 @@ const AppState = (props) => {
   useEffect(() => {
     if (!token) return; // skip fetch if token not loaded yet
     getUserCart();
+    getUserAddress();
+    getuserOrder();
   }, [token, reload]);
 
   useEffect(() => {
@@ -73,7 +77,7 @@ const AppState = (props) => {
 
       if (data.success) {
         setReload(!reload);
-        return { success: true, message: data.message, data:data.cart};
+        return { success: true, message: data.message, data: data.cart };
       } else {
         return { success: false, message: data.message || "Login failed." };
       }
@@ -98,14 +102,176 @@ const AppState = (props) => {
 
       const data = api.data;
       if (data.success) {
-        setCart(data.cart);   
-        setLatestCart(data.cart); 
+        setCart(data.cart);
+        setLatestCart(data.cart);
+        setReload(!reload);
       }
     } catch (error) {
       console.error(
         "Failed to add product to cart:",
         error.response?.data || error.message
       );
+    }
+  };
+
+  // decrease quantity
+  const decreaseQuantity = async (productId, qty) => {
+    try {
+      const api = await axios.post(
+        `${url}/api/cart/decreasequantity`,
+        { productId, qty },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Auth: token,
+          },
+          withCredentials: true,
+        }
+      );
+
+      setReload(!reload);
+      return api.data;
+    } catch (error) {
+      console.error("Failed to decrease quanity of the product");
+    }
+  };
+
+  // remove product by id
+  const removeProductById = async (productId) => {
+    try {
+      const api = await axios.delete(
+        `${url}/api/cart/removeproductfromcart/${productId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Auth: token,
+          },
+          withCredentials: true,
+        }
+      );
+
+      setReload(!reload);
+      return api.data;
+    } catch (error) {
+      console.error("Failed to remove product");
+    }
+  };
+
+  // clear cart
+  const clearCart = async () => {
+    try {
+      const api = await axios.delete(`${url}/api/cart/clearcart`, {
+        headers: {
+          "Content-Type": "application/json",
+          Auth: token,
+        },
+        withCredentials: true,
+      });
+
+      setReload(!reload);
+      return api.data;
+    } catch (error) {
+      console.error("Failed to clear cart");
+    }
+  };
+
+  //shipping address
+  const shippingAddress = async (
+    fullName,
+    address,
+    city,
+    pinCode,
+    phoneNumber,
+    country,
+    state
+  ) => {
+    try {
+      const api = await axios.post(
+        `${url}/api/address/addaddress`,
+        { fullName, address, city, pinCode, phoneNumber, country, state },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Auth: token,
+          },
+          withCredentials: true,
+        }
+      );
+      setReload(!reload);
+      return api.data;
+    } catch (error) {
+      console.error("Failed to adding shipping address");
+    }
+  };
+
+  // get user address
+  const getUserAddress = async () => {
+    try {
+      const api = await axios.get(`${url}/api/address/getaddress`, {
+        headers: {
+          "Content-Type": "application/json",
+          Auth: token,
+        },
+        withCredentials: true,
+      });
+
+      setUserAddress(api.data.useraddress);
+      setReload(!reload);
+    } catch (error) {
+      console.error(
+        "Failed to fetch user address:",
+        error.api?.data || error.message
+      );
+    }
+  };
+
+  //create order
+  const confirmOrder = async (
+    shippingInfo,
+    cartItems,
+    totalAmount,
+    Totalquantity,
+    shippingcharges
+  ) => {
+    try {
+      const response = await axios.post(
+        `${url}/api/payment/createorder`,
+        {
+          shippingInfo,
+          cartItems,
+          totalAmount,
+          Totalquantity,
+          shippingcharges,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Auth: token,
+          },
+          withCredentials: true,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Confirm order error:", error);
+      alert("Error creating order");
+    }
+  };
+
+  //get user order
+  const getuserOrder = async () => {
+    try {
+      const response = await axios.get(`${url}/api/payment/userorder`, {
+        headers: {
+          "Content-Type": "application/json",
+          Auth: token,
+        },
+        withCredentials: true,
+      });
+      setUserOrder(response.data.order);
+      return response.data;
+    } catch (error) {
+      console.error("fetch user order error:", error);
     }
   };
 
@@ -121,7 +287,17 @@ const AppState = (props) => {
         setCartSheetOpen,
         cartSheetOpen,
         latestCart,
-        lastAddedProduct, setLastAddedProduct
+        lastAddedProduct,
+        setLastAddedProduct,
+        decreaseQuantity,
+        removeProductById,
+        clearCart,
+        shippingAddress,
+        userAddress,
+        confirmOrder,
+        setCart,
+        userOrder,
+        getuserOrder,
       }}
     >
       {props.children}
